@@ -11,8 +11,14 @@ FFmpeg simple Encoder
 #include "VideoEncoder.h"
 #include "Settings.h"
 
-
-
+extern "C"
+{
+#include "libavcodec/avcodec.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
+#include "libavutil/frame.h"
+#include "libavutil/samplefmt.h"
+}
 
 #define MAX_AUDIO_PACKET_SIZE (128 * 1024)
 
@@ -261,7 +267,7 @@ bool VideoEncoder::OpenVideo(AVFormatContext *oc, AVStream *pStream)
 	if (!(pFormatContext->oformat->flags & AVFMT_RAWPICTURE)) 
 	{
 		/* allocate output buffer */
-		nSizeVideoEncodeBuffer = 10000000;
+		nSizeVideoEncodeBuffer = 100000000;
 		pVideoEncodeBuffer = (uint8_t *)av_malloc(nSizeVideoEncodeBuffer);
 	}
 
@@ -330,6 +336,7 @@ AVStream *VideoEncoder::AddVideoStream(AVFormatContext *pContext, AVCodecID code
 	identically 1. */
 	pCodecCxt->time_base.den = 25;
 	pCodecCxt->time_base.num = 1;
+    pCodecCxt->framerate = { 25, 1 };
 	pCodecCxt->gop_size = 12; // emit one intra frame every twelve frames at most
 
 	pCodecCxt->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -377,7 +384,7 @@ AVStream * VideoEncoder::AddAudioStream(AVFormatContext *pContext, AVCodecID cod
 	pCodecCxt->bit_rate    = 128000;
 	pCodecCxt->sample_rate = 44100;
 	pCodecCxt->channels    = 1; // mono
-	pCodecCxt->sample_fmt  = AV_SAMPLE_FMT_S16;
+    pCodecCxt->sample_fmt = AV_SAMPLE_FMT_FLTP; // AV_SAMPLE_FMT_S16;
 
 	nSizeAudioEncodeBuffer = 4 * MAX_AUDIO_PACKET_SIZE;
 	if (pAudioEncodeBuffer == NULL)
@@ -491,7 +498,8 @@ bool VideoEncoder::AddVideoFrame(AVFrame * pOutputFrame, AVCodecContext *pVideoC
 
 			if (pVideoCodec->coded_frame->pts != AV_NOPTS_VALUE)
 			{
-				pkt.pts = AV_NOPTS_VALUE;
+				//pkt.pts = AV_NOPTS_VALUE;
+                pkt.pts = packet.dts;
 			}
 			else
 			{
