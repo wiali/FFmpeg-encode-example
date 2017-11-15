@@ -1,18 +1,26 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ffmpegDecoder", "ffmpegEncoder\ffmpegEncoder.vcproj", "{C1D750CD-5B20-48BC-944E-276D23B77F6E}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ffmpegEncoder", "ffmpegEncoder\ffmpegEncoder.vcxproj", "{C1D750CD-5B20-48BC-944E-276D23B77F6E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Debug|Win32.ActiveCfg = Debug|Win32
 		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Debug|Win32.Build.0 = Debug|Win32
+		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Debug|x64.ActiveCfg = Debug|x64
+		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Debug|x64.Build.0 = Debug|x64
 		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Release|Win32.ActiveCfg = Release|Win32
 		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Release|Win32.Build.0 = Release|Win32
+		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Release|x64.ActiveCfg = Release|x64
+		{C1D750CD-5B20-48BC-944E-276D23B77F6E}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

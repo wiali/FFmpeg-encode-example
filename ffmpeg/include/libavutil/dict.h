@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -40,22 +39,21 @@
  * entries and finally av_dict_free() to free the dictionary
  * and all its contents.
  *
- * @code
- * AVDictionary *d = NULL;                // "create" an empty dictionary
- * av_dict_set(&d, "foo", "bar", 0);      // add an entry
- *
- * char *k = av_strdup("key");            // if your strings are already allocated,
- * char *v = av_strdup("value");          // you can avoid copying them like this
- * av_dict_set(&d, k, v, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
- *
- * AVDictionaryEntry *t = NULL;
- * while (t = av_dict_get(d, "", t, AV_DICT_IGNORE_SUFFIX)) {
- *     <....>                             // iterate over all entries in d
- * }
- *
- * av_dict_free(&d);
- * @endcode
- *
+ @code
+   AVDictionary *d = NULL;           // "create" an empty dictionary
+   AVDictionaryEntry *t = NULL;
+
+   av_dict_set(&d, "foo", "bar", 0); // add an entry
+
+   char *k = av_strdup("key");       // if your strings are already allocated,
+   char *v = av_strdup("value");     // you can avoid copying them like this
+   av_dict_set(&d, k, v, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+
+   while (t = av_dict_get(d, "", t, AV_DICT_IGNORE_SUFFIX)) {
+       <....>                             // iterate over all entries in d
+   }
+   av_dict_free(&d);
+ @endcode
  */
 
 #define AV_DICT_MATCH_CASE      1
@@ -63,7 +61,7 @@
 #define AV_DICT_DONT_STRDUP_KEY 4   /**< Take ownership of a key that's been
                                          allocated with av_malloc() and children. */
 #define AV_DICT_DONT_STRDUP_VAL 8   /**< Take ownership of a value that's been
-                                         allocated with av_malloc() and chilren. */
+                                         allocated with av_malloc() and children. */
 #define AV_DICT_DONT_OVERWRITE 16   ///< Don't overwrite existing entries.
 #define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
                                       delimiter is added, the strings are simply concatenated. */
@@ -83,8 +81,8 @@ typedef struct AVDictionary AVDictionary;
  * @param flags Allows case as well as suffix-insensitive comparisons.
  * @return Found entry or NULL, changing key or value leads to undefined behavior.
  */
-AVDictionaryEntry *
-av_dict_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
+                               const AVDictionaryEntry *prev, int flags);
 
 /**
  * Get number of entries in dictionary.
@@ -130,8 +128,10 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
  * @param src pointer to source AVDictionary struct
  * @param flags flags to use when setting entries in *dst
  * @note metadata is read using the AV_DICT_IGNORE_SUFFIX flag
+ * @return 0 on success, negative AVERROR code on failure. If dst was allocated
+ *           by this function, callers should free the associated memory.
  */
-void av_dict_copy(AVDictionary **dst, AVDictionary *src, int flags);
+int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags);
 
 /**
  * Free all the memory allocated for an AVDictionary struct

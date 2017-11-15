@@ -62,7 +62,7 @@
  *     int      bin_len;
  * } test_struct;
  *
- * static const AVOption options[] = {
+ * static const AVOption test_options[] = {
  *   { "test_int", "This is a test option of int type.", offsetof(test_struct, int_opt),
  *     AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
  *   { "test_str", "This is a test option of string type.", offsetof(test_struct, str_opt),
@@ -75,7 +75,7 @@
  * static const AVClass test_class = {
  *     .class_name = "test class",
  *     .item_name  = av_default_item_name,
- *     .option     = options,
+ *     .option     = test_options,
  *     .version    = LIBAVUTIL_VERSION_INT,
  * };
  * @endcode
@@ -224,6 +224,7 @@ enum AVOptionType{
     AV_OPT_TYPE_STRING,
     AV_OPT_TYPE_RATIONAL,
     AV_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
+    AV_OPT_TYPE_DICT,
     AV_OPT_TYPE_CONST = 128,
 };
 
@@ -262,10 +263,21 @@ typedef struct AVOption {
     int flags;
 #define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
 #define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding
+#if FF_API_OPT_TYPE_METADATA
 #define AV_OPT_FLAG_METADATA        4   ///< some data extracted or inserted into the file like title, comment, ...
+#endif
 #define AV_OPT_FLAG_AUDIO_PARAM     8
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
+/**
+ * The option is intended for exporting values to the caller.
+ */
+#define AV_OPT_FLAG_EXPORT          64
+/**
+ * The option may not be set through the AVOptions API, only read.
+ * This flag only makes sense when AV_OPT_FLAG_EXPORT is also set.
+ */
+#define AV_OPT_FLAG_READONLY        128
 //FIXME think about enc-audio, ... style flags
 
     /**
@@ -307,14 +319,14 @@ void av_opt_set_defaults(void *s);
  * @return the number of successfully set key/value pairs, or a negative
  * value corresponding to an AVERROR code in case of error:
  * AVERROR(EINVAL) if opts cannot be parsed,
- * the error code issued by av_set_string3() if a key/value pair
+ * the error code issued by av_opt_set() if a key/value pair
  * cannot be set
  */
 int av_set_options_string(void *ctx, const char *opts,
                           const char *key_val_sep, const char *pairs_sep);
 
 /**
- * Free all string and binary options in obj.
+ * Free all allocated objects in obj.
  */
 void av_opt_free(void *obj);
 
@@ -396,7 +408,7 @@ int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational
  *         was found.
  *
  * @note Options found with AV_OPT_SEARCH_CHILDREN flag may not be settable
- * directly with av_set_string3(). Use special calls which take an options
+ * directly with av_opt_set(). Use special calls which take an options
  * AVDictionary (e.g. avformat_open_input()) to set options found with this
  * flag.
  */
@@ -436,7 +448,7 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
  *             or NULL
  * @return next AVOption or NULL
  */
-const AVOption *av_opt_next(void *obj, const AVOption *prev);
+const AVOption *av_opt_next(const void *obj, const AVOption *prev);
 
 /**
  * Iterate over AVOptions-enabled children of obj.
@@ -480,11 +492,16 @@ const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *pre
  * AVERROR(ERANGE) if the value is out of range
  * AVERROR(EINVAL) if the value is not valid
  */
-int av_opt_set       (void *obj, const char *name, const char *val, int search_flags);
-int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_flags);
-int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
-int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
-int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
+int av_opt_set         (void *obj, const char *name, const char *val, int search_flags);
+int av_opt_set_int     (void *obj, const char *name, int64_t     val, int search_flags);
+int av_opt_set_double  (void *obj, const char *name, double      val, int search_flags);
+int av_opt_set_q       (void *obj, const char *name, AVRational  val, int search_flags);
+int av_opt_set_bin     (void *obj, const char *name, const uint8_t *val, int size, int search_flags);
+/**
+ * @note Any old dictionary present is discarded and replaced with a copy of the new one. The
+ * caller still owns val is and responsible for freeing it.
+ */
+int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, int search_flags);
 /**
  * @}
  */
@@ -504,10 +521,28 @@ int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size,
 /**
  * @note the returned string will av_malloc()ed and must be av_free()ed by the caller
  */
-int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   **out_val);
-int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
-int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
-int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
+int av_opt_get         (void *obj, const char *name, int search_flags, uint8_t   **out_val);
+int av_opt_get_int     (void *obj, const char *name, int search_flags, int64_t    *out_val);
+int av_opt_get_double  (void *obj, const char *name, int search_flags, double     *out_val);
+int av_opt_get_q       (void *obj, const char *name, int search_flags, AVRational *out_val);
+/**
+ * @param[out] out_val The returned dictionary is a copy of the actual value and must
+ * be freed with av_dict_free() by the caller
+ */
+int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDictionary **out_val);
+
+/**
+ * Copy options from src object into dest object.
+ *
+ * Options that require memory allocation (e.g. string or binary) are malloc'ed in dest object.
+ * Original memory allocated for such options is freed unless both src and dest options points to the same memory.
+ *
+ * @param dest Object to copy from
+ * @param src  Object to copy into
+ * @return 0 on success, negative on error
+ */
+int av_opt_copy(void *dest, const void *src);
+
 /**
  * @}
  * @}

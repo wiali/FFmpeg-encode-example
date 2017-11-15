@@ -54,6 +54,42 @@ typedef struct AVIOInterruptCB {
 } AVIOInterruptCB;
 
 /**
+ * Different data types that can be returned via the AVIO
+ * write_data_type callback.
+ */
+enum AVIODataMarkerType {
+    /**
+     * Header data; this needs to be present for the stream to be decodeable.
+     */
+    AVIO_DATA_MARKER_HEADER,
+    /**
+     * A point in the output bytestream where a decoder can start decoding
+     * (i.e. a keyframe). A demuxer/decoder given the data flagged with
+     * AVIO_DATA_MARKER_HEADER, followed by any AVIO_DATA_MARKER_SYNC_POINT,
+     * should give decodeable results.
+     */
+    AVIO_DATA_MARKER_SYNC_POINT,
+    /**
+     * A point in the output bytestream where a demuxer can start parsing
+     * (for non self synchronizing bytestream formats). That is, any
+     * non-keyframe packet start point.
+     */
+    AVIO_DATA_MARKER_BOUNDARY_POINT,
+    /**
+     * This is any, unlabelled data. It can either be a muxer not marking
+     * any positions at all, it can be an actual boundary/sync point
+     * that the muxer chooses not to mark, or a later part of a packet/fragment
+     * that is cut into multiple write callbacks due to limited IO buffer size.
+     */
+    AVIO_DATA_MARKER_UNKNOWN,
+    /**
+     * Trailer data, which doesn't contain actual content, but only for
+     * finalizing the output file.
+     */
+    AVIO_DATA_MARKER_TRAILER
+};
+
+/**
  * Bytestream IO Context.
  * New fields can be added to the end with minor version bumps.
  * Removal, reordering and changes to existing fields require a major
@@ -115,9 +151,25 @@ typedef struct AVIOContext {
      * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
      */
     int seekable;
-} AVIOContext;
 
-/* unbuffered I/O */
+    /**
+     * A callback that is used instead of write_packet.
+     */
+    int (*write_data_type)(void *opaque, uint8_t *buf, int buf_size,
+                           enum AVIODataMarkerType type, int64_t time);
+    /**
+     * If set, don't call write_data_type separately for AVIO_DATA_MARKER_BOUNDARY_POINT,
+     * but ignore them and treat them as AVIO_DATA_MARKER_UNKNOWN (to avoid needlessly
+     * small chunks of data returned from the callback).
+     */
+    int ignore_boundary_point;
+
+    /**
+     * Internal, not meant to be used from outside of AVIOContext.
+     */
+    enum AVIODataMarkerType current_type;
+    int64_t last_time;
+} AVIOContext;
 
 /**
  * Return AVIO_FLAG_* access flags corresponding to the access permissions
@@ -178,21 +230,45 @@ int avio_put_str(AVIOContext *s, const char *str);
 
 /**
  * Convert an UTF-8 string to UTF-16LE and write it.
+ * @param s the AVIOContext
+ * @param str NULL-terminated UTF-8 string
+ *
  * @return number of bytes written.
  */
 int avio_put_str16le(AVIOContext *s, const char *str);
 
 /**
- * Passing this as the "whence" parameter to a seek function causes it to
+ * Convert an UTF-8 string to UTF-16BE and write it.
+ * @param s the AVIOContext
+ * @param str NULL-terminated UTF-8 string
+ *
+ * @return number of bytes written.
+ */
+int avio_put_str16be(AVIOContext *s, const char *str);
+
+/**
+ * Mark the written bytestream as a specific type.
+ *
+ * Zero-length ranges are omitted from the output.
+ *
+ * @param time the stream time the current bytestream pos corresponds to
+ *             (in AV_TIME_BASE units), or AV_NOPTS_VALUE if unknown or not
+ *             applicable
+ * @param type the kind of data written starting at the current pos
+ */
+void avio_write_marker(AVIOContext *s, int64_t time, enum AVIODataMarkerType type);
+
+/**
+ * ORing this as the "whence" parameter to a seek function causes it to
  * return the filesize without seeking anywhere. Supporting this is optional.
  * If it is not supported then the seek function will return <0.
  */
 #define AVSEEK_SIZE 0x10000
 
 /**
- * Oring this flag as into the "whence" parameter to a seek function causes it to
- * seek by any means (like reopening and linear reading) or other normally unreasonble
- * means that can be extreemly slow.
+ * Passing this flag as the "whence" parameter to a seek function causes it to
+ * seek by any means (like reopening and linear reading) or other normally unreasonable
+ * means that can be extremely slow.
  * This may be ignored by the seek code.
  */
 #define AVSEEK_FORCE 0x20000
@@ -318,6 +394,7 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  *
  * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
+ * @param url resource to access
  * @param flags flags which control how the resource indicated by url
  * is to be opened
  * @return 0 in case of success, a negative value corresponding to an
@@ -333,6 +410,7 @@ int avio_open(AVIOContext **s, const char *url, int flags);
  *
  * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
+ * @param url resource to access
  * @param flags flags which control how the resource indicated by url
  * is to be opened
  * @param int_cb an interrupt callback to be used at the protocols level
@@ -382,7 +460,7 @@ int avio_open_dyn_buf(AVIOContext **s);
 /**
  * Return the written size and a pointer to the buffer. The buffer
  * must be freed with av_free().
- * Padding of FF_INPUT_BUFFER_PADDING_SIZE is added to the buffer.
+ * Padding of AV_INPUT_BUFFER_PADDING_SIZE is added to the buffer.
  *
  * @param s IO context
  * @param pbuffer pointer to a byte buffer
@@ -406,6 +484,8 @@ const char *avio_enum_protocols(void **opaque, int output);
 /**
  * Pause and resume playing - only meaningful if using a network streaming
  * protocol (e.g. MMS).
+ *
+ * @param h     IO context from which to call the read_pause function pointer
  * @param pause 1 for pause, 0 for resume
  */
 int     avio_pause(AVIOContext *h, int pause);
@@ -413,6 +493,8 @@ int     avio_pause(AVIOContext *h, int pause);
 /**
  * Seek to a given timestamp relative to some component stream.
  * Only meaningful if using a network streaming protocol (e.g. MMS.).
+ *
+ * @param h IO context from which to call the seek function pointers
  * @param stream_index The stream index that the timestamp is relative to.
  *        If stream_index is (-1) the timestamp should be in AV_TIME_BASE
  *        units from the beginning of the presentation.

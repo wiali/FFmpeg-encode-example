@@ -61,13 +61,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		int w = W_VIDEO;
 		int h = H_VIDEO;
-		AVFrame* frame = avcodec_alloc_frame();
+		AVFrame* frame = av_frame_alloc();
 		int nSampleSize = 2 * 44100.0f / 25.0f; // 1 / 25 sec * FORMAT SIZE(S16)
 		char* sample = new char[nSampleSize];
 		// Create frame
-		int bufferImgSize = avpicture_get_size(PIX_FMT_BGR24, w, h);
+		int bufferImgSize = avpicture_get_size(AV_PIX_FMT_BGR24, w, h);
 		uint8_t * buffer = (uint8_t*)av_mallocz(bufferImgSize);
-		avpicture_fill((AVPicture*)frame, buffer, PIX_FMT_BGR24, w, h);
+		avpicture_fill((AVPicture*)frame, buffer, AV_PIX_FMT_BGR24, w, h);
 
 		for (int i = 0; i < FRAME_COUNT; i++)
 		{      

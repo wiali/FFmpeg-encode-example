@@ -2,12 +2,16 @@
 FFmpeg simple Encoder
 */
 
+#pragma warning(disable: 4996)   
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "ffmpegInclude.h"
 #include <math.h>
 #include "VideoEncoder.h"
 #include "Settings.h"
+
+
 
 
 #define MAX_AUDIO_PACKET_SIZE (128 * 1024)
@@ -107,7 +111,7 @@ bool VideoEncoder::AddFrame(AVFrame* frame, const char* soundBuffer, int soundBu
 			if (!pImgConvertCtx) 
 			{
 				pImgConvertCtx = sws_getContext(pVideoCodec->width, pVideoCodec->height,
-					PIX_FMT_RGB24,
+                    AV_PIX_FMT_RGB24,
 					pVideoCodec->width, pVideoCodec->height,
 					pVideoCodec->pix_fmt,
 					SWS_BICUBLIN, NULL, NULL, NULL);
@@ -206,7 +210,7 @@ AVFrame * VideoEncoder::CreateFFmpegPicture(AVPixelFormat pix_fmt, int nWidth, i
 	uint8_t *picture_buf = NULL;
 	int size;
 
-	picture = avcodec_alloc_frame();
+	picture = av_frame_alloc();
 	if ( !picture)
 	{
 		printf("Cannot create frame\n");
@@ -293,7 +297,7 @@ bool VideoEncoder::NeedConvert()
 	bool res = false;
 	if (pVideoStream && pVideoStream->codec)
 	{
-		res = (pVideoStream->codec->pix_fmt != PIX_FMT_RGB24);
+		res = (pVideoStream->codec->pix_fmt != AV_PIX_FMT_RGB24);
 	}
 	return res;
 }
@@ -328,7 +332,7 @@ AVStream *VideoEncoder::AddVideoStream(AVFormatContext *pContext, AVCodecID code
 	pCodecCxt->time_base.num = 1;
 	pCodecCxt->gop_size = 12; // emit one intra frame every twelve frames at most
 
-	pCodecCxt->pix_fmt = PIX_FMT_YUV420P;
+	pCodecCxt->pix_fmt = AV_PIX_FMT_YUV420P;
 	if (pCodecCxt->codec_id == AV_CODEC_ID_MPEG2VIDEO) 
 	{
 		// Just for testing, we also add B frames 
@@ -541,7 +545,7 @@ bool VideoEncoder::AddAudioSample(AVFormatContext *pFormatContext, AVStream *pSt
 	{
 		AVFrame*  pAudioFrame = NULL;
 
-		pAudioFrame = avcodec_alloc_frame();
+		pAudioFrame = av_frame_alloc();
 
 		// Audio frame should be equal or smaller pCodecCxt->frame_size.
 		pAudioFrame->nb_samples = min(pCodecCxt->frame_size / av_get_bytes_per_sample(AV_SAMPLE_FMT_S16), nCountSamples);
@@ -590,7 +594,7 @@ bool VideoEncoder::AddAudioSample(AVFormatContext *pFormatContext, AVStream *pSt
 		pSoundBuffer  += nCurrentBufferSize;      
 
 		nWriteSamples += pAudioFrame->nb_samples;
-		avcodec_free_frame(&pAudioFrame);
+        av_frame_free(&pAudioFrame);
 	}
 
 	// save excess

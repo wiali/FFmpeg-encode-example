@@ -7,7 +7,7 @@
 
 #define W_VIDEO 320
 #define H_VIDEO 240
-#define FILE_NAME          "c:\\temp\\1.avi"
+#define FILE_NAME          "1.avi"
 #define FRAME_COUNT        150
 #define CONTAINER          "auto"
 

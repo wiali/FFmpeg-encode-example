@@ -40,7 +40,7 @@
  * @li @ref lavd "libavdevice" special devices muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
  * @li @ref lavr "libavresample" audio resampling, format conversion and mixing
- * @li @subpage libswscale  color conversion and scaling library
+ * @li @ref libsws "libswscale"  color conversion and scaling library
  *
  * @section libav_versioning Versioning and compatibility
  *
@@ -127,6 +127,12 @@
  *
  * @}
  *
+ * @defgroup lavu_log Logging Facility
+ *
+ * @{
+ *
+ * @}
+ *
  * @defgroup lavu_misc Other
  *
  * @{
@@ -138,45 +144,14 @@
  * @{
  *
  * @}
- */
-
-
-/**
+ *
  * @defgroup preproc_misc Preprocessor String Macros
  *
- * String manipulation macros
- *
  * @{
- */
-
-#define AV_STRINGIFY(s)         AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
-
-#define AV_GLUE(a, b) a ## b
-#define AV_JOIN(a, b) AV_GLUE(a, b)
-
-#define AV_PRAGMA(s) _Pragma(#s)
-
-/**
+ *
  * @}
  */
 
-/**
- * @defgroup version_utils Library Version Macros
- *
- * Useful to check and match library version in order to maintain
- * backward compatibility.
- *
- * @{
- */
-
-#define AV_VERSION_INT(a, b, c) (a<<16 | b<<8 | c)
-#define AV_VERSION_DOT(a, b, c) a ##.## b ##.## c
-#define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
-
-/**
- * @}
- */
 
 /**
  * @addtogroup lavu_ver
@@ -187,6 +162,13 @@
  * Return the LIBAVUTIL_VERSION_INT constant.
  */
 unsigned avutil_version(void);
+
+/**
+ * Return an informative version string. This usually is the actual release
+ * version number or a git commit description. This string has no fixed format
+ * and can change any time. It should never be parsed by code.
+ */
+const char *av_version_info(void);
 
 /**
  * Return the libavutil build-time configuration.
@@ -278,7 +260,7 @@ enum AVPictureType {
     AV_PICTURE_TYPE_I = 1, ///< Intra
     AV_PICTURE_TYPE_P,     ///< Predicted
     AV_PICTURE_TYPE_B,     ///< Bi-dir predicted
-    AV_PICTURE_TYPE_S,     ///< S(GMC)-VOP MPEG4
+    AV_PICTURE_TYPE_S,     ///< S(GMC)-VOP MPEG-4
     AV_PICTURE_TYPE_SI,    ///< Switching Intra
     AV_PICTURE_TYPE_SP,    ///< Switching Predicted
     AV_PICTURE_TYPE_BI,    ///< BI type
@@ -298,7 +280,14 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
  */
 
 #include "error.h"
+#include "rational.h"
 #include "version.h"
+#include "macros.h"
+
+/**
+ * Return the fractional representation of the internal time base.
+ */
+AVRational av_get_time_base_q(void);
 
 /**
  * @}

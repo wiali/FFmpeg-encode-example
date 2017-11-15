@@ -23,6 +23,7 @@
 
 /**
  * @file
+ * @ingroup libsws
  * @brief
  *     external api for the swscale stuff
  */
@@ -35,6 +36,9 @@
 #include "version.h"
 
 /**
+ * @defgroup libsws Color conversion and scaling
+ * @{
+ *
  * Return the LIBSWSCALE_VERSION_INT constant.
  */
 unsigned swscale_version(void);
@@ -70,27 +74,13 @@ const char *swscale_license(void);
 #define SWS_PRINT_INFO              0x1000
 
 //the following 3 flags are not completely implemented
-//internal chrominace subsampling info
+//internal chrominance subsampling info
 #define SWS_FULL_CHR_H_INT    0x2000
 //input subsampling info
 #define SWS_FULL_CHR_H_INP    0x4000
 #define SWS_DIRECT_BGR        0x8000
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
-
-#if FF_API_SWS_CPU_CAPS
-/**
- * CPU caps are autodetected now, those flags
- * are only provided for API compatibility.
- */
-#define SWS_CPU_CAPS_MMX      0x80000000
-#define SWS_CPU_CAPS_MMXEXT   0x20000000
-#define SWS_CPU_CAPS_MMX2     0x20000000
-#define SWS_CPU_CAPS_3DNOW    0x40000000
-#define SWS_CPU_CAPS_ALTIVEC  0x10000000
-#define SWS_CPU_CAPS_BFIN     0x01000000
-#define SWS_CPU_CAPS_SSE2     0x02000000
-#endif
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
@@ -168,7 +158,6 @@ int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFi
  */
 void sws_freeContext(struct SwsContext *swsContext);
 
-#if FF_API_SWS_GETCONTEXT
 /**
  * Allocate and return an SwsContext. You need it to perform
  * scaling/conversion operations using sws_scale().
@@ -183,13 +172,11 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @return a pointer to an allocated context, or NULL in case of error
  * @note this function is to be removed after a saner alternative is
  *       written
- * @deprecated Use sws_getCachedContext() instead.
  */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
                                   int dstW, int dstH, enum AVPixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,
                                   SwsFilter *dstFilter, const double *param);
-#endif
 
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
@@ -342,5 +329,9 @@ void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, int num_pix
  * @see av_opt_find().
  */
 const AVClass *sws_get_class(void);
+
+/**
+ * @}
+ */
 
 #endif /* SWSCALE_SWSCALE_H */

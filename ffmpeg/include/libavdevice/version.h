@@ -25,10 +25,10 @@
  * Libavdevice version macros
  */
 
-#include "libavutil/avutil.h"
+#include "libavutil/version.h"
 
-#define LIBAVDEVICE_VERSION_MAJOR 54
-#define LIBAVDEVICE_VERSION_MINOR  0
+#define LIBAVDEVICE_VERSION_MAJOR 56
+#define LIBAVDEVICE_VERSION_MINOR  1
 #define LIBAVDEVICE_VERSION_MICRO  0
 
 #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
@@ -38,6 +38,8 @@
                                            LIBAVDEVICE_VERSION_MINOR, \
                                            LIBAVDEVICE_VERSION_MICRO)
 #define LIBAVDEVICE_BUILD       LIBAVDEVICE_VERSION_INT
+
+#define LIBAVDEVICE_IDENT       "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
